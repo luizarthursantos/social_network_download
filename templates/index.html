@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Instagram Story Downloader</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%);
+      padding: 24px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 40px 36px;
+      max-width: 520px;
+      width: 100%;
+      box-shadow: 0 24px 64px rgba(0,0,0,.25);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .logo svg { flex-shrink: 0; }
+
+    .logo h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #1a1a2e;
+      line-height: 1.2;
+    }
+
+    .logo p {
+      font-size: 0.78rem;
+      color: #888;
+      margin-top: 2px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid #e5e5e5;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      color: #222;
+      transition: border-color .2s;
+      outline: none;
+    }
+
+    input[type="text"]:focus, input[type="password"]:focus {
+      border-color: #833ab4;
+    }
+
+    .url-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .url-row input { flex: 1; margin-bottom: 0; }
+
+    .btn-paste {
+      flex-shrink: 0;
+      background: #f3f0ff;
+      border: 2px solid #e5e5e5;
+      border-radius: 10px;
+      padding: 0 14px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #833ab4;
+      transition: background .2s;
+      white-space: nowrap;
+    }
+
+    .btn-paste:hover { background: #e9e3ff; }
+
+    .advanced-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.82rem;
+      color: #888;
+      cursor: pointer;
+      user-select: none;
+      margin-bottom: 20px;
+    }
+
+    .advanced-toggle svg { transition: transform .2s; }
+    .advanced-toggle.open svg { transform: rotate(90deg); }
+
+    .advanced-panel {
+      display: none;
+      background: #fafafa;
+      border: 1px solid #ebebeb;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .advanced-panel.open { display: block; }
+
+    .advanced-panel small {
+      display: block;
+      color: #999;
+      font-size: 0.75rem;
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    .advanced-panel a { color: #833ab4; }
+
+    .btn-download {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #833ab4, #fd1d1d);
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity .2s, transform .1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-download:hover:not(:disabled) { opacity: .9; }
+    .btn-download:active:not(:disabled) { transform: scale(.98); }
+    .btn-download:disabled { opacity: .6; cursor: not-allowed; }
+
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      display: none;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .status {
+      margin-top: 18px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      display: none;
+    }
+
+    .status.info  { background: #f0f7ff; color: #0066cc; border: 1px solid #cce0ff; }
+    .status.error { background: #fff0f0; color: #cc2200; border: 1px solid #ffd0cc; }
+    .status.success { background: #f0fff5; color: #006622; border: 1px solid #b3f0cc; }
+
+    .note {
+      margin-top: 20px;
+      font-size: 0.75rem;
+      color: #bbb;
+      text-align: center;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      <!-- Instagram-style gradient icon -->
+      <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="44" height="44" rx="12" fill="url(#ig)"/>
+        <rect x="11" y="11" width="22" height="22" rx="6" stroke="white" stroke-width="2.2" fill="none"/>
+        <circle cx="22" cy="22" r="5.5" stroke="white" stroke-width="2.2" fill="none"/>
+        <circle cx="29.5" cy="14.5" r="1.4" fill="white"/>
+        <defs>
+          <linearGradient id="ig" x1="0" y1="44" x2="44" y2="0" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#fcb045"/>
+            <stop offset=".5" stop-color="#fd1d1d"/>
+            <stop offset="1" stop-color="#833ab4"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <div>
+        <h1>Story Downloader</h1>
+        <p>Download Instagram stories as MP4</p>
+      </div>
+    </div>
+
+    <label for="url-input">Story URL</label>
+    <div class="url-row">
+      <input
+        type="text"
+        id="url-input"
+        placeholder="https://www.instagram.com/stories/username/..."
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button class="btn-paste" id="btn-paste" title="Paste from clipboard">Paste</button>
+    </div>
+
+    <div class="advanced-toggle" id="advanced-toggle">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <path d="M4 2l4 4-4 4" stroke="#888" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Authentication (required for private / stories)
+    </div>
+
+    <div class="advanced-panel" id="advanced-panel">
+      <label for="session-input">Instagram Session ID</label>
+      <input
+        type="password"
+        id="session-input"
+        placeholder="Paste your sessionid cookie value here"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <small>
+        Stories always require login. Open Instagram in your browser, open DevTools
+        &rarr; Application &rarr; Cookies &rarr; <strong>instagram.com</strong>, then copy the
+        value of the <code>sessionid</code> cookie and paste it above.<br/>
+        Your session ID is never stored or sent anywhere except to Instagram.
+      </small>
+    </div>
+
+    <button class="btn-download" id="btn-download">
+      <span class="spinner" id="spinner"></span>
+      <span id="btn-label">Download Video</span>
+    </button>
+
+    <div class="status" id="status"></div>
+
+    <p class="note">
+      Only public stories or stories visible with your account are downloadable.<br/>
+      For personal use only. Respect Instagram's Terms of Service.
+    </p>
+  </div>
+
+  <script>
+    const urlInput   = document.getElementById("url-input");
+    const sessionInput = document.getElementById("session-input");
+    const btnDownload = document.getElementById("btn-download");
+    const btnPaste   = document.getElementById("btn-paste");
+    const spinner    = document.getElementById("spinner");
+    const btnLabel   = document.getElementById("btn-label");
+    const statusEl   = document.getElementById("status");
+    const advToggle  = document.getElementById("advanced-toggle");
+    const advPanel   = document.getElementById("advanced-panel");
+
+    advToggle.addEventListener("click", () => {
+      advToggle.classList.toggle("open");
+      advPanel.classList.toggle("open");
+    });
+
+    btnPaste.addEventListener("click", async () => {
+      try {
+        const text = await navigator.clipboard.readText();
+        urlInput.value = text.trim();
+        urlInput.focus();
+      } catch {
+        urlInput.focus();
+        document.execCommand("paste");
+      }
+    });
+
+    function setStatus(type, msg) {
+      statusEl.className = `status ${type}`;
+      statusEl.textContent = msg;
+      statusEl.style.display = "block";
+    }
+
+    function clearStatus() {
+      statusEl.style.display = "none";
+    }
+
+    function setLoading(loading) {
+      btnDownload.disabled = loading;
+      spinner.style.display = loading ? "block" : "none";
+      btnLabel.textContent = loading ? "Downloading…" : "Download Video";
+    }
+
+    btnDownload.addEventListener("click", async () => {
+      const url = urlInput.value.trim();
+      const session_id = sessionInput.value.trim();
+
+      if (!url) {
+        setStatus("error", "Please paste an Instagram story URL first.");
+        urlInput.focus();
+        return;
+      }
+
+      if (!url.includes("instagram.com")) {
+        setStatus("error", "That doesn't look like an Instagram URL.");
+        return;
+      }
+
+      clearStatus();
+      setLoading(true);
+      setStatus("info", "Contacting Instagram and downloading… this may take a few seconds.");
+
+      try {
+        const res = await fetch("/download", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url, session_id }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          const msg = data.error || `Server error ${res.status}`;
+          if (res.status === 403) {
+            // Automatically open the auth panel
+            if (!advPanel.classList.contains("open")) {
+              advToggle.classList.add("open");
+              advPanel.classList.add("open");
+            }
+            setStatus("error", msg + " Open the Authentication section above and enter your Session ID.");
+          } else {
+            setStatus("error", msg);
+          }
+          return;
+        }
+
+        // Trigger browser file download
+        const blob = await res.blob();
+        const disposition = res.headers.get("Content-Disposition") || "";
+        const match = disposition.match(/filename="?([^"]+)"?/);
+        const filename = match ? match[1] : "instagram_story.mp4";
+
+        const objectUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = objectUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(objectUrl);
+
+        setStatus("success", "Download started! Check your downloads folder.");
+      } catch (err) {
+        setStatus("error", "Network error: " + err.message);
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    // Allow pressing Enter in URL field to trigger download
+    urlInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") btnDownload.click();
+    });
+  </script>
+</body>
+</html>
